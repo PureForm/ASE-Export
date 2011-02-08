@@ -66,21 +66,73 @@
 
 				# Length of this block - see below
 
-				$title	= (mb_convert_encoding($color[1],"UTF-16BE","UTF-8") . pack("n",0));
+				$title	= (mb_convert_encoding($color[2],"UTF-16BE","UTF-8") . pack("n",0));
 				$buffer = pack("n",(strlen($title) / 2)); # Length of the title
 				$buffer .= $title; # Title
 
 				# Colors
-				list ($r,$g,$b) = array_map("intval",sscanf($color[0],"%2x%2x%2x"));
-				$r /= 255;
-				$g /= 255;
-				$b /= 255;
+				$bytes	= array ();
+				$type	= "";
 
-				$buffer .= "RGB ";
-				$buffer .= strrev(pack("f",$r));
-				$buffer .= strrev(pack("f",$g));
-				$buffer .= strrev(pack("f",$b));
-				$buffer .= pack("n",0); # Color type - 0x00 "Global"
+				switch ($color[1]) {
+					case "rgb-hex":
+						$type		= "RGB ";
+						$bytes		= array_map("intval",sscanf($color[0],"%2x%2x%2x"));
+						$bytes[0]	/= 255; # R
+						$bytes[1]	/= 255; # G
+						$bytes[2]	/= 255; # B
+					break;
+
+					case "rgb-int":
+						$type		= "RGB ";
+						$bytes		= $color[0];
+						$bytes[0]	/= 255; # R
+						$bytes[1]	/= 255; # G
+						$bytes[2]	/= 255; # B
+					break;
+
+					case "rgb-float":
+						$type	= "RGB ";
+						$bytes	= $color[0];
+					break;
+
+					case "lab":
+						$type		= "LAB ";
+						$bytes		= $color[0];
+						$bytes[0]	/= 100; # L
+					break;
+
+					case "gray-int":
+						$type		= "Gray";
+						$bytes[0]	= ($color[0] / 255);
+					break;
+
+					case "gray-float":
+						$type		= "Gray";
+						$bytes[0]	= $color[0];
+					break;
+
+					case "cmyk-int":
+						$type		= "CMYK";
+						$bytes		= $color[0];
+						$bytes[0]	/= 100; # C
+						$bytes[1]	/= 100; # M
+						$bytes[2]	/= 100; # Y
+						$bytes[3]	/= 100; # K
+
+					break;
+
+					case "cmyk-float":
+						$type	= "CMYK";
+						$bytes	= $color[0];
+					break;
+				}
+				$buffer .= $type;
+
+				foreach ($bytes as $byte) {
+					$buffer .= strrev(pack("f",$byte));
+				}
+				$buffer .= pack("n",2); # Color type: 0 -> Global, 1 -> Spot, 2 -> Normal
 
 				echo pack("N",strlen($buffer)); # Length of this block
 				echo $buffer;
@@ -97,36 +149,3 @@
 
 		return $return;
 	}
-
-/*
-	Colors from the Palettes:
-		* Vintage Modern		http://www.colourlovers.com/palette/110225/Vintage_Modern
-		* Thought Provoking		http://www.colourlovers.com/palette/694737/Thought_Provoking
-
-	Licensed under Creative Commons: http://creativecommons.org/licenses/by-nc-sa/3.0/
-*/
-
-	$palettes = array (
-		array (
-			"title"		=> "Vintage Modern",
-			"colors"	=> array (
-				array ("8C2318","Eames"),
-				array ("5e8c6a","Knoll"),
-				array ("88a65e","Hans Wegner"),
-				array ("bfb35a","Cantaloupe Skin"),
-				array ("f2c45a","Verner Panton"),
-			),
-		),
-		array (
-			"title"		=> "Thought Provoking",
-			"colors"	=> array (
-				array ("ecd078","thought by some"),
-				array ("d95b43","thoughtful brick"),
-				array ("c02942","Thoughtless"),
-				array ("542437","thought you were"),
-				array ("53777a","Thoughtless"),
-			),
-		),
-	);
-
-	$ase = mkASE($palettes);
