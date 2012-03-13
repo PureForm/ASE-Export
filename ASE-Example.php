@@ -12,7 +12,6 @@
 
 	Licensed under Creative Commons: http://creativecommons.org/licenses/by-nc-sa/3.0/
 */
-s
 	require "ASE-Export.php";
 
 	$palettes = array (
